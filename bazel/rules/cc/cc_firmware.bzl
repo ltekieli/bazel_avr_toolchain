@@ -1,3 +1,4 @@
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 
 def _impl(ctx):
@@ -10,8 +11,17 @@ def _impl(ctx):
     args.add(src)
     args.add(binary)
 
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    objcopy = cc_common.get_tool_for_action(feature_configuration = feature_configuration, action_name = ACTION_NAMES.objcopy_embed_data)
+
     ctx.actions.run(
-        executable = toolchain.objcopy_executable,
+        executable = objcopy,
         outputs = [binary],
         inputs = depset(
             direct = [src],
@@ -33,5 +43,6 @@ cc_firmware = rule(
     attrs = {
         "src": attr.label(allow_single_file = True),
     },
+    fragments = ["cpp"],
     toolchains = use_cpp_toolchain(),
 )

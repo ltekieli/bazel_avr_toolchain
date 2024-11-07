@@ -1,6 +1,0 @@
-#!/bin/bash
-
-NAME=$(basename "$0")
-TOOLCHAIN_BINDIR=external/avr/bin
-
-exec "${TOOLCHAIN_BINDIR}"/"${NAME}" "$@"

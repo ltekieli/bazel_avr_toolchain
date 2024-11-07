@@ -4,4 +4,5 @@ platform(
         "//bazel/platforms/cpu:avr",
         "@platforms//os:none",
     ],
+    visibility = ["//visibility:public"],
 )

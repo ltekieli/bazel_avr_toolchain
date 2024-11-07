@@ -2,7 +2,7 @@
 
 ## Building
 ```
-$ bazel build -s --config=avr //:blink_firmware
+$ bazel build -s --config=avr //example/:blink_firmware
 ```
 
 ## Flashing

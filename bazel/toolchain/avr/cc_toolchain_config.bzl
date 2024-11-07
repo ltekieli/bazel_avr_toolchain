@@ -10,50 +10,20 @@ load(
 )
 
 def _impl(ctx):
-    #
-    # In order to get access to tools from custom rules, need to specify them here.
-    # Because of the "no_legacy_features", those won't be anyway used.
-    #
-    tool_paths = [
-        tool_path(
-            name = "ar",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "cpp",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "gcc",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "ld",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "nm",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "objcopy",
-            path = "wrappers/avr-objcopy",
-        ),
-        tool_path(
-            name = "objdump",
-            path = "not-used",
-        ),
-        tool_path(
-            name = "strip",
-            path = "not-used",
-        ),
-    ]
+    c_compile_action = action_config(
+        action_name = ACTION_NAMES.c_compile,
+        tools = [
+            tool(
+                tool = ctx.executable.binary_gcc,
+            ),
+        ],
+    )
 
     cpp_compile_action = action_config(
         action_name = ACTION_NAMES.cpp_compile,
         tools = [
             tool(
-                path = "wrappers/avr-gcc",
+                tool = ctx.executable.binary_gcc,
             ),
         ],
     )
@@ -62,7 +32,7 @@ def _impl(ctx):
         action_name = ACTION_NAMES.cpp_link_executable,
         tools = [
             tool(
-                path = "wrappers/avr-gcc",
+                tool = ctx.executable.binary_gcc,
             ),
         ],
     )
@@ -71,7 +41,7 @@ def _impl(ctx):
         action_name = ACTION_NAMES.cpp_link_static_library,
         tools = [
             tool(
-                path = "wrappers/avr-ar",
+                tool = ctx.executable.binary_ar,
             ),
         ],
     )
@@ -80,7 +50,16 @@ def _impl(ctx):
         action_name = ACTION_NAMES.strip,
         tools = [
             tool(
-                path = "wrappers/avr-strip",
+                tool = ctx.executable.binary_strip,
+            ),
+        ],
+    )
+
+    objcopy_action = action_config(
+        action_name = ACTION_NAMES.objcopy_embed_data,
+        tools = [
+            tool(
+                tool = ctx.executable.binary_objcopy,
             ),
         ],
     )
@@ -90,7 +69,10 @@ def _impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = [ACTION_NAMES.cpp_compile],
+                actions = [
+                    ACTION_NAMES.c_compile,
+                    ACTION_NAMES.cpp_compile,
+                ],
                 flag_groups = [
                     #
                     # Compile only.
@@ -98,14 +80,6 @@ def _impl(ctx):
                     flag_group(
                         flags = [
                             "-c",
-                        ],
-                    ),
-                    #
-                    # Use C++.
-                    #
-                    flag_group(
-                        flags = [
-                            "-xc++",
                         ],
                     ),
                     #
@@ -159,6 +133,24 @@ def _impl(ctx):
                         ],
                     ),
                     #
+                    # Add include paths.
+                    #
+                    flag_group(
+                        iterate_over = "include_paths",
+                        flags = [
+                            "-I%{include_paths}",
+                        ],
+                    ),
+                    #
+                    # Add quote include paths.
+                    #
+                    flag_group(
+                        iterate_over = "quote_include_paths",
+                        flags = [
+                            "-I%{quote_include_paths}",
+                        ],
+                    ),
+                    #
                     # Use input file and declare output file.
                     #
                     flag_group(
@@ -180,6 +172,7 @@ def _impl(ctx):
         flag_sets = [
             flag_set(
                 actions = [
+                    ACTION_NAMES.c_compile,
                     ACTION_NAMES.cpp_compile,
                     ACTION_NAMES.cpp_link_executable,
                 ],
@@ -204,6 +197,7 @@ def _impl(ctx):
         flag_sets = [
             flag_set(
                 actions = [
+                    ACTION_NAMES.c_compile,
                     ACTION_NAMES.cpp_compile,
                     ACTION_NAMES.cpp_link_executable,
                 ],
@@ -226,14 +220,16 @@ def _impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = [ACTION_NAMES.cpp_link_static_library],
+                actions = [
+                    ACTION_NAMES.cpp_link_static_library,
+                ],
                 flag_groups = [
                     #
                     # Create archive and and add object files.
                     #
                     flag_group(
                         flags = [
-                            "rc",
+                            "rcsD",
                         ],
                     ),
                     #
@@ -313,10 +309,12 @@ def _impl(ctx):
     no_legacy_features = feature(name = "no_legacy_features")
 
     action_configs = [
+        c_compile_action,
         cpp_compile_action,
         cpp_link_executable_action,
         cpp_link_static_library_action,
         strip_action,
+        objcopy_action,
     ]
 
     features = [
@@ -337,11 +335,15 @@ def _impl(ctx):
         target_cpu = "unknown",
         target_libc = "unknown",
         compiler = "unknown",
-        tool_paths = tool_paths,
     )
 
 cc_toolchain_config = rule(
     implementation = _impl,
-    attrs = {},
+    attrs = {
+        "binary_ar": attr.label(allow_single_file = True, executable = True, cfg = "exec", mandatory = True),
+        "binary_gcc": attr.label(allow_single_file = True, executable = True, cfg = "exec", mandatory = True),
+        "binary_strip": attr.label(allow_single_file = True, executable = True, cfg = "exec", mandatory = True),
+        "binary_objcopy": attr.label(allow_single_file = True, executable = True, cfg = "exec", mandatory = True),
+    },
     provides = [CcToolchainConfigInfo],
 )

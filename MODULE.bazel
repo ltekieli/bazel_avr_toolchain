@@ -11,8 +11,8 @@ http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "ht
 http_archive(
     name = "avr",
     build_file = "//third_party/toolchains:avr.BUILD",
-    sha256 = "04023fb121f94f858dc664d8fa46ddcb605acbb7e6d1b0f41123a7c94994580a",
-    url = "https://github.com/ltekieli/devboards-toolchains/releases/download/v2023.04.01/avr.tar.gz",
+    sha256 = "07eecfaaec0037c82cd7f5265022e3afca7ba3934aba9531b621e561894e5aa8",
+    url = "https://github.com/ltekieli/devboards-toolchains/releases/download/v2024.11.01/avr.tar.gz",
 )
 
 register_toolchains(
